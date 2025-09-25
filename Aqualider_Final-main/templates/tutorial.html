@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tutorial - Aqualider</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<script src="{{ url_for('static', filename='js/audio.js') }}"></script>
+<body class="tutorial-page">
+
+    <a href="{{ url_for('index') }}" class="top-button left-button" style="display: flex;">‹ Regresar</a>
+
+    <div class="tutorial-container">
+        <h1>Tutorial: Flappy Gota</h1>
+        
+        <div class="tutorial-content">
+            <div class="animation-box">
+                <div class="scene scene-1">
+                    <img src="{{ url_for('static', filename='sprites/drop_hero.gif') }}" class="tutorial-drop-fail" alt="Gota fallando">
+                    <div class="pipe-container-fail">
+                        <div class="pipe pipe-upper"></div>
+                        <div class="pipe pipe-lower"></div>
+                    </div>
+                    <div class="fail-text">¡No choques!</div>
+                </div>
+
+                <div class="scene scene-2">
+                    <img src="{{ url_for('static', filename='sprites/drop_hero.gif') }}" class="tutorial-drop-success" alt="Gota teniendo éxito">
+                    <div class="pipe-container-success">
+                        <div class="pipe pipe-upper"></div>
+                        <div class="pipe pipe-lower"></div>
+                    </div>
+                    <div class="trash-icon">🗑️</div>
+                    <div class="success-text">¡Así se hace!</div>
+                </div>
+
+                <div class="spacebar-container">
+                    <div class="spacebar">ESPACIO</div>
+                    <span>¡Salta!</span>
+                </div>
+            </div>
+            <div class="instructions">
+                <h2>¿Cómo Jugar?</h2>
+                <ol>
+                    <li><strong>¡Impúlsate!</strong> Presiona la <strong>Barra Espaciadora</strong> o haz <strong>clic</strong> para que la gota salte y se mantenga en el aire.</li>
+                    <li><strong>¡Esquiva los Tubos!</strong> Guía a la gota a través de los espacios entre las tuberías grises. ¡No las toques o perderás!</li>
+                    <li><strong>¡Recoge Residuos!</strong> Atrapa toda la basura que encuentres en tu camino para limpiar el agua y ganar más puntos.</li>
+                    <li><strong>¡Supera tu Récord!</strong> El objetivo es simple: ¡llegar lo más lejos posible sin caer ni chocar!</li>
+                </ol>
+            </div>
+        </div>
+    </div>
+
+</body>
+</html>

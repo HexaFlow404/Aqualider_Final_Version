@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Estadísticas - Aqualider</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<script src="{{ url_for('static', filename='js/audio.js') }}"></script>
+<body class="stats-page">
+
+    <a href="{{ url_for('index') }}" class="top-button left-button" style="display: flex;">‹ Regresar</a>
+
+    <div class="stats-container">
+        <h1>📊 Mis Estadísticas 📊</h1>
+
+        <div class="stats-card">
+            <h2>💧 Flappy Gota</h2>
+            <div class="stats-grid">
+                <div class="stat-item">
+                    <h3>Máximo Puntaje 🏆</h3>
+                    <p id="max-score">0</p>
+                </div>
+                <div class="stat-item">
+                    <h3>Puntaje Total 📈</h3>
+                    <p id="total-score">0</p>
+                </div>
+                <div class="stat-item">
+                    <h3>Partidas Jugadas 🎮</h3>
+                    <p id="games-played">0</p>
+                </div>
+                <div class="stat-item">
+                    <h3>Máximos Residuos ⭐</h3>
+                    <p id="max-residues">0</p>
+                </div>
+                <div class="stat-item">
+                    <h3>Residuos Totales 🗑️</h3>
+                    <p id="total-residues">0</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="stats-card disabled">
+            <h2>❓ Juego 2 (En Progreso)</h2>
+            <p>¡Nuevas aventuras y estadísticas próximamente!</p>
+        </div>
+
+        <div class="cta-card">
+            <h3>🚀 ¡Sube de Nivel tu Experiencia! 🚀</h3>
+            <p><strong>Regístrate</strong> o <strong>Inicia Sesión</strong> para desbloquear Objetivos Diarios, <strong>mantener tu racha de juego</strong>, guardar tu progreso en la nube y competir en el ranking mundial.</p>
+            <a href="{{ url_for('login') }}" class="cta-button">¡Conectar Ahora!</a>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Cargar datos de localStorage
+            const stats = JSON.parse(localStorage.getItem('flappyGotaStats'));
+
+            if (stats) {
+                document.getElementById('max-score').textContent = stats.maxScore || 0;
+                document.getElementById('total-score').textContent = stats.totalScore || 0;
+                document.getElementById('games-played').textContent = stats.gamesPlayed || 0;
+                document.getElementById('max-residues').textContent = stats.maxResidues || 0;
+                document.getElementById('total-residues').textContent = stats.totalResidues || 0;
+            }
+        });
+    </script>
+</body>
+</html>

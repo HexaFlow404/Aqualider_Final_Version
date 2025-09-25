@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Aqualider - Jugar</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body class="jugar-page">
+    <div class="jugar-bg-overlay"></div>
+
+    <a href="{{ url_for('index') }}" class="top-button left-button" aria-label="Volver a inicio">‹ Regresar</a>
+    <a href="{{ url_for('jugar') }}" class="game-over-back-button" aria-label="Volver a la selección de juego">‹ Volver</a>
+
+    <div class="bottom-controls game-controls" style="display: none;">
+        <button id="music-btn-game" class="control-btn">🎵</button>
+        <button id="sound-btn-game" class="control-btn">🔊</button>
+    </div>
+
+    <div class="center-container" id="menuWrapper">
+        <div class="menu-container" id="mainMenu">
+            <h1>🌊 Juegos Didácticos 🌍</h1>
+            <button class="menu-button" id="startGameBtn">Flappy Gota</button>
+            <button class="menu-button disabled" disabled>En progreso</button>
+        </div>
+    </div>
+
+    <div id="gameOverMenu" aria-hidden="true">
+        <button id="restartBtn" class="menu-button">Volver a Jugar</button>
+        <button id="menuBtn" class="menu-button">Volver al Menú</button>
+    </div>
+
+    <canvas id="gameCanvas"></canvas>
+    
+    <img id="player-sprite" src="{{ url_for('static', filename='sprites/drop_hero.gif') }}" style="display: none;" alt="Player Sprite">
+    
+    <img id="canvas-bg-pattern" src="data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23ffffff' fill-opacity='0.05' fill-rule='evenodd'%3E%3Cpath d='M0 40L40 0H20L0 20M40 40V20L20 40'/%3E%3C/g%3E%3C/svg%3E" style="display: none;">
+
+
+    <script>
+        const menuWrapper = document.getElementById("menuWrapper"),
+              startGameBtn = document.getElementById("startGameBtn"),
+              canvas = document.getElementById("gameCanvas"),
+              ctx = canvas.getContext("2d"),
+              gameOverMenu = document.getElementById("gameOverMenu"),
+              restartBtn = document.getElementById("restartBtn"),
+              menuBtn = document.getElementById("menuBtn"),
+              gameOverBackButton = document.querySelector('.game-over-back-button'),
+              playerImage = document.getElementById('player-sprite'),
+              bgPatternImage = document.getElementById('canvas-bg-pattern'),
+              gameControls = document.querySelector('.game-controls');
+        let imageLoaded = false;
+        playerImage.onload = () => { imageLoaded = true; };
+        let bgPattern;
+        bgPatternImage.onload = () => { bgPattern = ctx.createPattern(bgPatternImage, 'repeat'); };
+        
+        const musicGame = new Audio("{{ url_for('static', filename='audio/musica(FG).mp3') }}");
+        musicGame.loop = true;
+        const soundScore = new Audio("{{ url_for('static', filename='audio/sonido(FG).mp3') }}");
+        const soundGameOver = new Audio("{{ url_for('static', filename='audio/sonido2(FG).mp3') }}");
+        const soundMilestone = new Audio("{{ url_for('static', filename='audio/sonido3(FG).mp3') }}");
+        
+        let score, residueCollected, gameover, gameStarted, frame, pipes, residues;
+        const residueTypes = ["🥫", "🛍️", "🥤", "☣️", "🐠", "🔩", "🧱", "🗑️", "🛢️", "🍾"];
+        let stars = [], drips = [];
+        let starTimer = 0;
+        const backgrounds = ["#87CEEB", "#48C6B7", "#764ba2", "#191970"];
+        let currentBgIndex = 0;
+        const scoreThresholds = [15, 30, 50];
+
+        const drop = {
+            x:0, y:0, width:60, height:60, gravity:.5, lift:-9, velocity:0,
+            draw(){ imageLoaded ? ctx.drawImage(playerImage, this.x, this.y, this.width, this.height) : (ctx.fillStyle = "#1E90FF", ctx.beginPath(), ctx.arc(this.x + this.width / 2, this.y + this.height / 2, this.width / 2, 0, Math.PI * 2), ctx.fill()); },
+            update(){ this.velocity += this.gravity; this.y += this.velocity; if (this.y + this.height > canvas.height) { this.y = canvas.height - this.height; this.velocity = 0; if (gameStarted) gameover = true; } if (this.y < 0) { this.y = 0; this.velocity = 0; } },
+            jump(){ if (!gameover) { if (!gameStarted) gameStarted = true; this.velocity = this.lift; } }
+        };
+
+        function saveStats() {
+            let stats = JSON.parse(localStorage.getItem('flappyGotaStats')) || { maxScore: 0, totalScore: 0, gamesPlayed: 0, maxResidues: 0, totalResidues: 0 };
+            stats.gamesPlayed++; stats.totalScore += score; stats.totalResidues += residueCollected;
+            if (score > stats.maxScore) stats.maxScore = score;
+            if (residueCollected > stats.maxResidues) stats.maxResidues = residueCollected;
+            localStorage.setItem('flappyGotaStats', JSON.stringify(stats));
+        }
+
+        function resetGame(){
+            gameOverBackButton.style.display = 'none'; gameOverMenu.style.display = "none";
+            score = 0, residueCollected = 0, gameover = false, gameStarted = false, frame = 0, pipes = [], residues = [], stars = [], drips = [];
+            currentBgIndex = 0; canvas.style.backgroundColor = backgrounds[0];
+            drop.x = canvas.width / 5; drop.y = canvas.height / 2; drop.velocity = 0;
+            if (localStorage.getItem('musicMuted') !== 'true') musicGame.play();
+            gameLoop();
+        }
+
+        function startGame(){
+            menuWrapper.style.opacity = "0";
+            document.querySelector('.top-button.left-button').style.display = 'none';
+            gameControls.style.display = 'flex';
+            setTimeout(() => {
+                menuWrapper.style.display = "none"; canvas.style.display = "block";
+                canvas.width = window.innerWidth; canvas.height = window.innerHeight;
+                if (bgPatternImage.complete) bgPattern = ctx.createPattern(bgPatternImage, 'repeat');
+                resetGame();
+            }, 350);
+        }
+        
+        function createDrips(pipe) {
+            if (drips.length > 80) return;
+            for (let i = 0; i < 3; i++) {
+                drips.push({ x: pipe.x + Math.random() * 80, y: pipe.y - Math.random() * 20, vy: Math.random() * 2 + 3, size: Math.random() * 3 + 2 });
+                drips.push({ x: pipe.x + Math.random() * 80, y: pipe.y + 240 + Math.random() * 20, vy: Math.random() * 2 + 3, size: Math.random() * 3 + 2 });
+            }
+        }
+
+        function drawPipesAndResidues(){
+            const t = 80, i = 240;
+            if (gameStarted && frame % 90 === 0) {
+                const e = 100 + Math.random() * (canvas.height - i - 200);
+                const newPipe = { x: canvas.width, y: e, passed: false };
+                pipes.push(newPipe); createDrips(newPipe);
+                if (Math.random() > 0.2) {
+                    const s = e + 60 + Math.random() * (i - 120);
+                    const type = residueTypes[Math.floor(Math.random() * residueTypes.length)];
+                    residues.push({ x: canvas.width + t/2, y: s, size: 25, type: type, rotation: 0, rotationSpeed: (Math.random() - 0.5) * 0.05 });
+                }
+            }
+            pipes.forEach(e => {
+                ctx.fillStyle = "#B0B0B0"; ctx.fillRect(e.x, 0, t, e.y); ctx.fillRect(e.x, e.y + i, t, canvas.height - e.y - i);
+                ctx.fillStyle = "#888888"; ctx.fillRect(e.x - 5, e.y - 20, t + 10, 20); ctx.fillRect(e.x - 5, e.y + i, t + 10, 20);
+                if (gameStarted) e.x -= 4;
+                if (drop.x < e.x + t && drop.x + drop.width > e.x && (drop.y < e.y || drop.y + drop.height > e.y + i)) gameover = true;
+                if (e.x + t < drop.x && !e.passed) { 
+                    score++; e.passed = true;
+                    if(localStorage.getItem('soundMuted') !== 'true') { soundScore.currentTime = 0; soundScore.play(); }
+                    if (score > 0 && score % 10 === 0) {
+                        if(localStorage.getItem('soundMuted') !== 'true') { soundMilestone.currentTime = 0; soundMilestone.play(); }
+                        starTimer = 60;
+                        for(let i=0; i<15; i++) { stars.push({ x: drop.x + drop.width / 2, y: drop.y + drop.height / 2, vx: (Math.random() - 0.5) * 4, vy: (Math.random() - 0.5) * 4, size: Math.random() * 3 + 1, alpha: 1 }); }
+                    }
+                }
+            });
+            pipes = pipes.filter(e => e.x > -t);
+            residues.forEach((e, idx) => {
+                ctx.save(); ctx.translate(e.x, e.y); ctx.rotate(e.rotation);
+                ctx.font = `${e.size}px Arial`; ctx.fillText(e.type, -e.size/2, e.size/2); ctx.restore();
+                if (gameStarted) { e.x -= 4; e.rotation += e.rotationSpeed; }
+                const dist = Math.hypot(drop.x + drop.width/2 - e.x, drop.y + drop.height/2 - e.y);
+                if (dist < drop.width/2 + e.size) { residueCollected++; residues.splice(idx, 1); }
+            });
+            residues = residues.filter(e => e.x > -e.size);
+        }
+        
+        function drawDrips() { drips.forEach((drip, index) => { drip.y += drip.vy; drip.x -= 4; if (drip.y > canvas.height || drip.x < -10) { drips.splice(index, 1); } else { ctx.fillStyle = 'rgba(100, 150, 255, 0.7)'; ctx.beginPath(); ctx.arc(drip.x, drip.y, drip.size, 0, Math.PI * 2); ctx.fill(); } }); }
+        function drawStars() { if (starTimer > 0) { starTimer--; stars.forEach((star, index) => { star.x += star.vx; star.y += star.vy; star.alpha -= 0.02; if (star.alpha <= 0) { stars.splice(index, 1); } else { ctx.fillStyle = `rgba(255, 215, 0, ${star.alpha})`; ctx.beginPath(); ctx.arc(star.x, star.y, star.size, 0, Math.PI * 2); ctx.fill(); } }); } }
+        function updateBackground(){ if (currentBgIndex < scoreThresholds.length && score >= scoreThresholds[currentBgIndex]) { currentBgIndex++; canvas.style.backgroundColor = backgrounds[currentBgIndex]; if(localStorage.getItem('soundMuted') !== 'true') { soundMilestone.currentTime = 0; soundMilestone.play(); } } }
+
+        function gameLoop(){
+            // CAMBIO: Se elimina el fondo de cascada y se vuelve a dibujar el color de fondo + patrón
+            ctx.fillStyle = backgrounds[currentBgIndex];
+            ctx.fillRect(0,0,canvas.width,canvas.height);
+            if(bgPattern) { ctx.fillStyle = bgPattern; ctx.fillRect(0,0,canvas.width,canvas.height); }
+
+            drop.update(); drawPipesAndResidues(); updateBackground(); drawDrips(); drop.draw(); drawStars();
+            ctx.fillStyle = "white"; ctx.font = "bold 30px Arial"; ctx.strokeStyle = "black"; ctx.lineWidth = 4; ctx.textAlign = "left";
+            ctx.strokeText(`Puntos: ${score}`, 20, 50); ctx.fillText(`Puntos: ${score}`, 20, 50);
+            ctx.strokeText(`Residuos: ${residueCollected}`, 20, 90); ctx.fillText(`Residuos: ${residueCollected}`, 20, 90);
+            if (gameStarted) frame++; else { ctx.fillStyle = "white"; ctx.font = "bold 32px Arial"; ctx.textAlign = "center"; ctx.fillText("Presiona ESPACIO o haz clic para empezar", canvas.width/2, canvas.height/2); }
+            if (gameover) {
+                musicGame.pause(); if(localStorage.getItem('soundMuted') !== 'true') { soundGameOver.currentTime = 0; soundGameOver.play(); }
+                saveStats(); gameOverBackButton.style.display = 'inline-flex';
+                ctx.fillStyle = "rgba(0, 0, 0, 0.7)"; ctx.fillRect(0,0,canvas.width,canvas.height);
+                ctx.fillStyle = "white"; ctx.textAlign = "center"; ctx.font = "50px Arial"; ctx.fillText("Juego Terminado", canvas.width/2, canvas.height/2 - 80);
+                ctx.font = "30px Arial"; ctx.fillText(`Puntuación Final: ${score}`, canvas.width/2, canvas.height/2); ctx.fillText(`Recogiste ${residueCollected} residuos.`, canvas.width/2, canvas.height/2 + 50);
+                gameOverMenu.style.display = "flex";
+            } else { requestAnimationFrame(gameLoop); }
+        }
+        
+        function handleInput(e){ if (e.code === "Space" && !gameover) drop.jump(); }
+        startGameBtn.addEventListener("click", () => {
+             if (typeof musicHome !== 'undefined') musicHome.pause();
+             startGame();
+        });
+        document.addEventListener("keydown", handleInput);
+        canvas.addEventListener("mousedown", () => { if (!gameover) drop.jump(); });
+        restartBtn.addEventListener("click", () => { gameOverMenu.style.display = "none"; resetGame(); });
+        menuBtn.addEventListener("click", () => { window.location.href = "{{ url_for('index') }}"; });
+        window.addEventListener('resize', () => { if (canvas.style.display === 'block') { canvas.width = window.innerWidth; canvas.height = window.innerHeight; } });
+        
+        const musicBtnGame = document.getElementById('music-btn-game');
+        const soundBtnGame = document.getElementById('sound-btn-game');
+        
+        function updateAudioControls() {
+            if (localStorage.getItem('musicMuted') === 'true') { musicGame.pause(); musicBtnGame.textContent = '🔇'; } else { if(gameStarted && !gameover) musicGame.play(); musicBtnGame.textContent = '🎵'; }
+            soundBtnGame.textContent = localStorage.getItem('soundMuted') === 'true' ? '🔈' : '🔊';
+        }
+
+        musicBtnGame.addEventListener('click', function() { 
+            const muted = localStorage.getItem('musicMuted') === 'true';
+            localStorage.setItem('musicMuted', !muted);
+            updateAudioControls();
+            this.blur();
+        });
+        soundBtnGame.addEventListener('click', function() { 
+            const muted = localStorage.getItem('soundMuted') === 'true';
+            localStorage.setItem('soundMuted', !muted);
+            updateAudioControls();
+            this.blur();
+        });
+        
+        updateAudioControls();
+    </script>
+    <script src="{{ url_for('static', filename='js/audio.js') }}"></script>
+</body>
+</html>

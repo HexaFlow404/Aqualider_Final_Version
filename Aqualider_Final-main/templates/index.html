@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aqualider - Inicio</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="main-container">
+        <button class="top-button left-button">‹ Regresar</button>
+        <div class="top-right-section">
+            <div class="user-info"><span class="user-icon">U</span><span>Usuario</span></div>
+            <a href="{{ url_for('login') }}" class="connect-button">Conectar</a>
+        </div>
+        <main class="content-grid">
+            <div class="menu-panel">
+                <h1 class="logo">💧 Aqualider 💧</h1>
+                <a href="{{ url_for('jugar') }}" class="menu-button">Jugar</a>
+                <a href="{{ url_for('tutorial') }}" class="menu-button">Tutorial</a>
+                <a href="{{ url_for('estadisticas') }}" class="menu-button">Estadísticas</a>
+            </div>
+            <div class="info-panel"><p>Aprende a separar residuos, reparar fugas y cuidar el medio ambiente mientras juegas. ¡Tu misión diaria te espera para convertirte en un verdadero líder del agua!</p></div>
+        </main>
+        <div class="bottom-controls">
+            <button id="music-btn" class="control-btn">🎵</button>
+            <button id="sound-btn" class="control-btn">🔊</button>
+            <button id="help-btn" class="control-btn">❓</button>
+        </div>
+        <div id="help-menu" class="help-menu hidden">
+             <h4>Centro de Ayuda</h4>
+            <div class="help-section">
+                <h5>Preguntas Frecuentes (FAQ) - Flappy Gota</h5>
+                <details><summary>¿Cómo se juega?</summary><p>Presiona la barra espaciadora o haz clic para saltar. Debes pasar por el medio de las tuberías y recoger los residuos.</p></details>
+                <details><summary>¿Por qué recojo residuos?</summary><p>¡Cada residuo cuenta! Recogerlos te da puntos y simboliza la importancia de mantener nuestras fuentes de agua limpias.</p></details>
+            </div>
+            <div class="help-section">
+                <h5>¿Quiénes Somos?</h5>
+                <p>Somos un grupo de jóvenes estudiantes de <strong>Barranquilla, Colombia</strong>, apasionados por la tecnología y el futuro de nuestro planeta. Buscamos con este juego una iniciativa para transformar, no solo nuestra ciudad, sino un planeta entero, gota a gota.</p>
+            </div>
+            <button id="close-help-btn">Cerrar</button>
+        </div>
+    </div>
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/audio.js') }}"></script>
+</body>
+</html>

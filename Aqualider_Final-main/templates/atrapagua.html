@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Atrapa el Agua Limpia</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='juegos/atrapagua/style.css') }}">
+</head>
+<body>
+    <a href="{{ url_for('jugar') }}" class="top-button left-button" style="display: flex; z-index: 100;">‹ Volver a Juegos</a>
+
+    <div id="game-container">
+        <canvas id="gameCanvas" width="600" height="800"></canvas>
+    </div>
+
+    <script src="{{ url_for('static', filename='juegos/atrapagua/game.js') }}"></script>
+</body>
+</html>
